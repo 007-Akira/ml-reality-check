@@ -63,7 +63,9 @@ def accuracy_figure(df):
             line=dict(color=COLORS[name], width=2.5, shape='linear'),
             marker=dict(size=7, color=COLORS[name]),
             hovertemplate=f'Seed %{{x}}<br>{name}: %{{y:.6f}}%<extra></extra>'))
-    figure.update_xaxes(title='Splitting seed', dtick=1 if len(df) <= 25 else None)
+    figure.update_xaxes(title='Splitting seed')
+    if len(df) <= 25:
+        figure.update_xaxes(tickmode='array', tickvals=df['seed'].tolist())
     figure.update_yaxes(ticksuffix='%')
     return style_figure(figure, height=440, y_title='Accuracy (%)')
 
@@ -169,6 +171,11 @@ def overview(df, report):
         column.metric(NAMES[model], f'{df[model].mean():.2%}')
     cards[2].metric('Mean difference · RF − LR', f"{analysis['mean_difference'] * 100:+.3f} pp")
     cards[3].metric('Paired runs', len(df))
+    st.caption(
+        f"Split outcomes · Logistic Regression wins: {int((df['difference'] < 0).sum())} · "
+        f"Random Forest wins: {int((df['difference'] > 0).sum())} · "
+        f"Ties: {int((df['difference'] == 0).sum())}"
+    )
     winner = interpretation['observed_winner']
     descriptive = f'{NAMES[winner]} had the higher observed mean accuracy' if winner in NAMES else 'The observed mean accuracies were tied'
     st.markdown(f'<div class="insight"><strong>{escape(descriptive)}.</strong><br>'
@@ -223,6 +230,7 @@ def performance(df):
 def evidence(report):
     analysis, interpretation = report['analysis'], report['interpretation']
     st.caption(analysis['method'])
+    st.caption('Exploratory inference · Approximate dependence correction · Independent validation required')
     cards = st.columns(3)
     cards[0].metric('Mean paired difference', f"{analysis['mean_difference'] * 100:+.3f} pp")
     cards[1].metric('Difference standard deviation', f"{analysis['std_difference'] * 100:.3f} pp")
